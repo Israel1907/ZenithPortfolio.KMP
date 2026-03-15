@@ -3,6 +3,7 @@ package com.example.zenithportfolio.data.repository
 import com.example.zenithportfolio.data.api.CoinGeckoApi
 import com.example.zenithportfolio.data.dto.toDomain
 import com.example.zenithportfolio.domain.model.Crypto
+import com.example.zenithportfolio.domain.repository.CryptoCache
 import com.example.zenithportfolio.domain.repository.CryptoRepository
 
 class CryptoRepositoryImpl(
