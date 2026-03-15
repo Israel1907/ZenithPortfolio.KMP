@@ -2,12 +2,14 @@ package com.example.zenithportfolio.di
 
 import com.example.zenithportfolio.data.api.CoinGeckoApi
 import com.example.zenithportfolio.data.api.createHttpClient
+import com.example.zenithportfolio.data.repository.CryptoCacheImpl
 import com.example.zenithportfolio.data.repository.CryptoRepositoryImpl
+import com.example.zenithportfolio.data.repository.FavoriteRepositoryImpl
+import com.example.zenithportfolio.domain.repository.CryptoCache
 import com.example.zenithportfolio.domain.repository.CryptoRepository
+import com.example.zenithportfolio.domain.repository.FavoriteRepository
 import com.example.zenithportfolio.presentation.crypto.CryptoViewModel
 import com.example.zenithportfolio.data.db.DatabaseDriverFactory
-import com.example.zenithportfolio.data.repository.CryptoCache
-import com.example.zenithportfolio.data.repository.FavoriteRepository
 import com.example.zenithportfolio.db.AppDatabase
 
 
@@ -22,8 +24,8 @@ val databaseModule = module {
     single { get<DatabaseDriverFactory>().createDriver() }
     single { AppDatabase(get()) }
     single { get<AppDatabase>().favoriteQueries }
-    single { FavoriteRepository(get()) }
-    single { CryptoCache(get<AppDatabase>().cachedCryptoQueries) }
+    single<FavoriteRepository> { FavoriteRepositoryImpl(get()) }
+    single<CryptoCache> { CryptoCacheImpl(get<AppDatabase>().cachedCryptoQueries) }
 }
 
 val viewModelModule = module {
@@ -39,4 +41,3 @@ val appModules = listOf(
     repositoryModule,
     viewModelModule
 )
-

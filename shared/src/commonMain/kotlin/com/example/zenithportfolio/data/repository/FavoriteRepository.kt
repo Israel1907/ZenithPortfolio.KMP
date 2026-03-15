@@ -1,22 +1,26 @@
 package com.example.zenithportfolio.data.repository
 
 import com.example.zenithportfolio.db.FavoriteQueries
+import com.example.zenithportfolio.domain.repository.FavoriteRepository
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.withContext
 
-class FavoriteRepository(private val queries: FavoriteQueries) {
+class FavoriteRepositoryImpl(
+    private val queries: FavoriteQueries,
+    private val dispatcher: CoroutineDispatcher = Dispatchers.IO
+) : FavoriteRepository {
 
-    suspend fun getAllFavorites(): Set<String> = withContext(Dispatchers.IO) {
+    override suspend fun getAllFavorites(): Set<String> = withContext(dispatcher) {
         queries.selectAll().executeAsList().toSet()
     }
 
-    suspend fun addFavorite(cryptoId: String) = withContext(Dispatchers.IO) {
+    override suspend fun addFavorite(cryptoId: String) = withContext(dispatcher) {
         queries.insert(cryptoId)
     }
 
-    suspend fun removeFavorite(cryptoId: String) = withContext(Dispatchers.IO) {
+    override suspend fun removeFavorite(cryptoId: String) = withContext(dispatcher) {
         queries.delete(cryptoId)
     }
 }
-

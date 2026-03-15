@@ -1,6 +1,8 @@
 package com.example.zenithportfolio.presentation.crypto
 
 import com.example.zenithportfolio.domain.repository.CryptoRepository
+import com.example.zenithportfolio.domain.repository.FavoriteRepository
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
@@ -11,13 +13,13 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import com.example.zenithportfolio.data.repository.FavoriteRepository
 
 class CryptoViewModel(
     private val repository: CryptoRepository,
-    private val favoriteRepository: FavoriteRepository
+    private val favoriteRepository: FavoriteRepository,
+    private val dispatcher: CoroutineDispatcher = Dispatchers.IO
 ) {
-    private val scope = CoroutineScope(Dispatchers.IO)
+    private val scope = CoroutineScope(dispatcher)
 
     private val _state = MutableStateFlow(CryptoState())
     val state: StateFlow<CryptoState> = _state.asStateFlow()
@@ -139,4 +141,3 @@ class CryptoViewModel(
         }
     }
 }
-

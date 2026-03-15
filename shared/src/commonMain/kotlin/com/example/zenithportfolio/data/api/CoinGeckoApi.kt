@@ -6,10 +6,10 @@ import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.request.*
 
-class CoinGeckoApi(private val client: HttpClient){
+open class CoinGeckoApi(private val client: HttpClient){
     private val baseUrl =  "https://api.coingecko.com/api/v3"
 
-    suspend fun getMarkets(
+    open suspend fun getMarkets(
         currency: String = "usd",
         limit: Int = 50
     ): List<CryptoDto>{
@@ -22,7 +22,7 @@ class CoinGeckoApi(private val client: HttpClient){
         }.body()
     }
 
-    suspend fun getCoinById(id: String): CryptoDto{
+    open suspend fun getCoinById(id: String): CryptoDto{
         return client.get("$baseUrl/coins/$id").body()
     }
 
