@@ -43,6 +43,9 @@ import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import com.example.zenithportfolio.presentation.crypto.CryptoEffect
+import com.example.zenithportfolio.ui.components.LoadingStateView
+import com.example.zenithportfolio.ui.components.EmptyStateView
+import com.example.zenithportfolio.ui.components.ErrorStateView
 
 class CryptoListScreen: Screen{
 
@@ -94,36 +97,34 @@ fun CryptoListContent(
         .fillMaxSize()
         .background(MaterialTheme.colorScheme.background)
     ){
-        when{
-            state.isLoading ->{
-                CircularProgressIndicator(
-                    modifier = Modifier.align(Alignment.Center),
-                    color = Accent
+        when {
+            state.isLoading && state.cryptos.isEmpty() -> {
+                LoadingStateView("Cargando criptomonedas...")
+            }
+            !state.isLoading && state.error != null && state.cryptos.isEmpty() -> {
+                ErrorStateView(
+                    message = state.error ?: "Error al cargar",
+                    onRetry = onRefresh
                 )
             }
-            state.error != null -> {
-                Column(
-                    modifier = Modifier.align(Alignment.Center),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ){
-                    Text(
-                        text = "Error: ${state.error}",
-                        color = Negative
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Button(onClick = onRefresh){
-                        Text("Reintentar")
-                    }
-                }
+            !state.isLoading && state.cryptos.isEmpty() && state.error == null -> {
+                EmptyStateView(
+                    icon = "\uD83D\uDCED",
+                    title = "Sin criptomonedas",
+                    subtitle = "No hay datos disponibles en este momento",
+                    actionLabel = "Reintentar",
+                    onAction = onRefresh
+                )
             }
-            else ->{
+            else -> {
                 PullToRefreshBox(
                     isRefreshing = state.isRefreshing,
                     onRefresh = onRefresh
                 ) {
                     Column(
                         modifier = Modifier.fillMaxSize()
-                        .statusBarsPadding()) {
+                            .statusBarsPadding()
+                    ) {
                         TextField(
                             value = state.searchQuery,
                             onValueChange = onSearch,
@@ -131,7 +132,7 @@ fun CryptoListContent(
                                 .fillMaxWidth()
                                 .padding(horizontal = 16.dp, vertical = 8.dp),
                             placeholder = { Text("Buscar crypto...", color = MaterialTheme.colorScheme.onSurfaceVariant) },
-                            leadingIcon = { Text("🔍", fontSize = 18.sp) },
+                            leadingIcon = { Text("\uD83D\uDD0D", fontSize = 18.sp) },
                             colors = TextFieldDefaults.colors(
                                 focusedContainerColor = MaterialTheme.colorScheme.surface,
                                 unfocusedContainerColor = MaterialTheme.colorScheme.surface,
@@ -144,19 +145,28 @@ fun CryptoListContent(
                             shape = RoundedCornerShape(12.dp),
                             singleLine = true
                         )
-                        LazyColumn(
-                            modifier = Modifier.fillMaxSize(),
-                            contentPadding = PaddingValues(16.dp),
-                            verticalArrangement = Arrangement.spacedBy(12.dp)
-                        )
-                        {
-                            items(state.filteredCryptos){ crypto ->
-                                CryptoCard(
-                                    crypto = crypto,
-                                    isFavorite = crypto.id in state.favorites,
-                                    onClick = {onCryptoClick(crypto.id)},
-                                    onFavoriteClick = { onFavoriteClick(crypto.id) }
-                                )
+                        if (state.filteredCryptos.isEmpty() && state.searchQuery.isNotBlank()) {
+                            EmptyStateView(
+                                icon = "\uD83D\uDD0D",
+                                title = "Sin resultados",
+                                subtitle = "No se encontraron criptomonedas para '${state.searchQuery}'",
+                                actionLabel = "Limpiar b\u00FAsqueda",
+                                onAction = { onSearch("") }
+                            )
+                        } else {
+                            LazyColumn(
+                                modifier = Modifier.fillMaxSize(),
+                                contentPadding = PaddingValues(16.dp),
+                                verticalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                items(state.filteredCryptos) { crypto ->
+                                    CryptoCard(
+                                        crypto = crypto,
+                                        isFavorite = crypto.id in state.favorites,
+                                        onClick = { onCryptoClick(crypto.id) },
+                                        onFavoriteClick = { onFavoriteClick(crypto.id) }
+                                    )
+                                }
                             }
                         }
                     }

@@ -6,6 +6,7 @@ struct CryptoDetailView: View {
     @State private var priceHistory: [Double] = []
     @State private var selectedDays: Int = 7
     @State private var isLoading: Bool = false
+    @State private var chartError: String? = nil
     @Environment(\.dismiss) private var dismiss
     @Environment(\.appColors) var colors
 
@@ -96,10 +97,19 @@ struct CryptoDetailView: View {
 
                     // Chart
                     if isLoading {
-                        ProgressView()
-                            .tint(AppColors.accent)
+                        LoadingStateView(message: "Cargando gr\u{00E1}fico...")
                             .frame(height: 200)
-                    } else if !priceHistory.isEmpty {
+                    } else if let error = chartError {
+                        ErrorStateView(message: error, onRetry: { loadChart() })
+                            .frame(height: 200)
+                    } else if priceHistory.isEmpty {
+                        EmptyStateView(
+                            icon: "\u{1F4CA}",
+                            title: "Gr\u{00E1}fico no disponible",
+                            subtitle: "No hay datos de precio disponibles"
+                        )
+                        .frame(height: 200)
+                    } else {
                         ChartView(prices: priceHistory, colors: colors)
                             .frame(height: 200)
                             .background(colors.surface)
@@ -118,6 +128,7 @@ struct CryptoDetailView: View {
 
         isLoading = true
         priceHistory = []
+        chartError = nil
 
         chartFetcher.fetchChart(
             cryptoId: crypto.id,
@@ -127,7 +138,7 @@ struct CryptoDetailView: View {
                 self.isLoading = false
             },
             onError: { error in
-                print("Error loading chart: \(error)")
+                self.chartError = error
                 self.isLoading = false
             }
         )

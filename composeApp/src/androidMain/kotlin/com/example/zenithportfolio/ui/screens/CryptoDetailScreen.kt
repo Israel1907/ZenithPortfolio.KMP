@@ -29,6 +29,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.*
 import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableIntStateOf
 import com.example.zenithportfolio.data.api.CoinGeckoApi
 import com.patrykandpatrick.vico.compose.cartesian.CartesianChartHost
 import com.patrykandpatrick.vico.compose.cartesian.layer.rememberLine
@@ -46,6 +47,9 @@ import com.patrykandpatrick.vico.core.cartesian.axis.VerticalAxis
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.koin.compose.koinInject
+import com.example.zenithportfolio.ui.components.LoadingStateView
+import com.example.zenithportfolio.ui.components.EmptyStateView
+import com.example.zenithportfolio.ui.components.ErrorStateView
 import java.lang.Exception
 
 
@@ -57,16 +61,23 @@ data class CryptoDetailScreen(val crypto: Crypto): Screen {
         val api: CoinGeckoApi = koinInject()
         var priceHistory by remember { mutableStateOf<List<Double>>(emptyList()) }
         var selectedDays by remember { mutableStateOf(7) }
+        var isChartLoading by remember { mutableStateOf(false) }
+        var chartError by remember { mutableStateOf<String?>(null) }
+        var retryTrigger by remember { mutableIntStateOf(0) }
 
-        LaunchedEffect(crypto.id, selectedDays) {
+        LaunchedEffect(crypto.id, selectedDays, retryTrigger) {
             priceHistory = emptyList()
-            withContext(Dispatchers.IO){
-                try{
+            isChartLoading = true
+            chartError = null
+            withContext(Dispatchers.IO) {
+                try {
                     kotlinx.coroutines.delay(300) // Evitar rate limit
                     val chart = api.getMarketChart(crypto.id, selectedDays)
                     priceHistory = chart.prices.map { it[1] }
-                }catch (e: Exception){
-                    println("Error cargando gráfica: ${e.message}")
+                } catch (e: Exception) {
+                    chartError = e.message ?: "Error desconocido"
+                } finally {
+                    isChartLoading = false
                 }
             }
         }
@@ -74,9 +85,12 @@ data class CryptoDetailScreen(val crypto: Crypto): Screen {
         CryptoDetailContent(
             crypto = crypto,
             priceHistory = priceHistory,
+            isChartLoading = isChartLoading,
+            chartError = chartError,
             selectedDays = selectedDays,
             onDaysChange = { selectedDays = it },
-            onBack = { navigator.pop()}
+            onChartRetry = { retryTrigger++ },
+            onBack = { navigator.pop() }
         )
     }
 
@@ -86,8 +100,11 @@ data class CryptoDetailScreen(val crypto: Crypto): Screen {
 fun CryptoDetailContent(
     crypto: Crypto,
     priceHistory: List<Double>,
+    isChartLoading: Boolean,
+    chartError: String?,
     selectedDays: Int,
     onDaysChange: (Int) -> Unit,
+    onChartRetry: () -> Unit,
     onBack: () -> Unit
 ){
     Column(modifier = Modifier
@@ -208,26 +225,57 @@ fun CryptoDetailContent(
 
         Spacer(modifier = Modifier.height(8.dp))
         key(selectedDays) {
-            val maxPoints = when (selectedDays) {
-                1 -> 24
-                7 -> 42
-                30 -> 30
-                90 -> 45
-                else -> 50
+            when {
+                isChartLoading -> {
+                    LoadingStateView(
+                        message = "Cargando gr\u00E1fico...",
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(200.dp)
+                    )
+                }
+                chartError != null -> {
+                    ErrorStateView(
+                        message = chartError,
+                        onRetry = onChartRetry,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(200.dp)
+                    )
+                }
+                priceHistory.isEmpty() -> {
+                    EmptyStateView(
+                        icon = "\uD83D\uDCCA",
+                        title = "Gr\u00E1fico no disponible",
+                        subtitle = "No hay datos de precio disponibles",
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(200.dp)
+                    )
+                }
+                else -> {
+                    val maxPoints = when (selectedDays) {
+                        1 -> 24
+                        7 -> 42
+                        30 -> 30
+                        90 -> 45
+                        else -> 50
+                    }
+                    val sampledPrices = if (priceHistory.size > maxPoints) {
+                        val step = priceHistory.size / maxPoints
+                        priceHistory.filterIndexed { index, _ -> index % step == 0 }
+                    } else {
+                        priceHistory
+                    }
+                    PriceChart(
+                        prices = sampledPrices,
+                        days = selectedDays,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(200.dp)
+                    )
+                }
             }
-            val sampledPrices = if (priceHistory.size > maxPoints) {
-                val step = priceHistory.size / maxPoints
-                priceHistory.filterIndexed { index, _ -> index % step == 0 }
-            } else {
-                priceHistory
-            }
-            PriceChart(
-                prices = sampledPrices,
-                days = selectedDays,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(200.dp)
-            )
         }
     }
 }
