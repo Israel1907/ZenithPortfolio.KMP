@@ -11,6 +11,7 @@ class CryptoViewModelWrapper: ObservableObject {
     @Published var error: String? = nil
     @Published var searchQuery: String = ""
     @Published var favorites: Set<String> = []
+    @Published var allCryptos: [Crypto] = []
     @Published var showCacheWarning: Bool = false
     private var hasShownCacheWarning: Bool = false
 
@@ -53,6 +54,7 @@ class CryptoViewModelWrapper: ObservableObject {
     private func updateState() {
         guard let state = viewModel.state.value as? CryptoState else { return }
         self.cryptos = state.filteredCryptos
+        self.allCryptos = state.cryptos
         self.isLoading = state.isLoading
         self.error = state.error
         if state.fromCache && !hasShownCacheWarning {

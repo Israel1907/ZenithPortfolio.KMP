@@ -18,23 +18,23 @@ struct CryptoListView: View {
             ZStack {
                 colors.background.ignoresSafeArea()
 
-                if viewModel.isLoading {
-                    ProgressView()
-                        .tint(AppColors.accent)
-                } else if let error = viewModel.error {
-                    VStack {
-                        Text("Error: \(error)")
-                            .foregroundColor(AppColors.negative)
-                        Button("Reintentar") {
-                            viewModel.loadCryptos()
-                        }
-                        .foregroundColor(AppColors.accent)
-                    }
+                if viewModel.isLoading && viewModel.allCryptos.isEmpty {
+                    LoadingStateView(message: "Cargando criptomonedas...")
+                } else if !viewModel.isLoading, let error = viewModel.error, viewModel.allCryptos.isEmpty {
+                    ErrorStateView(message: error, onRetry: { viewModel.loadCryptos() })
+                } else if !viewModel.isLoading && viewModel.allCryptos.isEmpty && viewModel.error == nil {
+                    EmptyStateView(
+                        icon: "\u{1F4ED}",
+                        title: "Sin criptomonedas",
+                        subtitle: "No hay datos disponibles en este momento",
+                        actionLabel: "Reintentar",
+                        onAction: { viewModel.loadCryptos() }
+                    )
                 } else {
                     VStack(spacing: 0) {
                         // Search bar
                         HStack {
-                            Text("🔍")
+                            Text("\u{1F50D}")
                             TextField("Buscar crypto...", text: $viewModel.searchQuery)
                                 .foregroundColor(colors.onSurface)
                                 .onChange(of: viewModel.searchQuery) { newValue in
@@ -46,26 +46,38 @@ struct CryptoListView: View {
                         .cornerRadius(12)
                         .padding()
 
-                        // List
-                        List(viewModel.cryptos, id: \.id) { crypto in
-                            CryptoRow(
-                                crypto: crypto,
-                                isFavorite: viewModel.favorites.contains(crypto.id),
-                                onFavoriteToggle: {
-                                    viewModel.toggleFavorite(cryptoId: crypto.id)
-                                },
-                                colors: colors
+                        if viewModel.cryptos.isEmpty && !viewModel.searchQuery.isEmpty {
+                            EmptyStateView(
+                                icon: "\u{1F50D}",
+                                title: "Sin resultados",
+                                subtitle: "No se encontraron criptomonedas para '\(viewModel.searchQuery)'",
+                                actionLabel: "Limpiar b\u{00FA}squeda",
+                                onAction: {
+                                    viewModel.searchQuery = ""
+                                    viewModel.search(query: "")
+                                }
                             )
-                            .listRowBackground(colors.background)
-                            .listRowSeparator(.hidden)
-                            .listRowInsets(EdgeInsets(top: 4, leading: 0, bottom: 4, trailing: 0))
-                            .onTapGesture {
-                                selectedCrypto = crypto
+                        } else {
+                            List(viewModel.cryptos, id: \.id) { crypto in
+                                CryptoRow(
+                                    crypto: crypto,
+                                    isFavorite: viewModel.favorites.contains(crypto.id),
+                                    onFavoriteToggle: {
+                                        viewModel.toggleFavorite(cryptoId: crypto.id)
+                                    },
+                                    colors: colors
+                                )
+                                .listRowBackground(colors.background)
+                                .listRowSeparator(.hidden)
+                                .listRowInsets(EdgeInsets(top: 4, leading: 0, bottom: 4, trailing: 0))
+                                .onTapGesture {
+                                    selectedCrypto = crypto
+                                }
                             }
-                        }
-                        .listStyle(.plain)
-                        .refreshable {
-                            viewModel.refresh()
+                            .listStyle(.plain)
+                            .refreshable {
+                                viewModel.refresh()
+                            }
                         }
                     }
                 }

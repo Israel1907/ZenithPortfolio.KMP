@@ -2,12 +2,17 @@ package com.example.zenithportfolio.data.repository
 
 import com.example.zenithportfolio.db.CachedCryptoQueries
 import com.example.zenithportfolio.domain.model.Crypto
+import com.example.zenithportfolio.domain.repository.CryptoCache
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.withContext
 
-class CryptoCache(private val queries: CachedCryptoQueries){
-    suspend fun saveCryptos(cryptos: List<Crypto>) =withContext(Dispatchers.IO){
+class CryptoCacheImpl(
+    private val queries: CachedCryptoQueries,
+    private val dispatcher: CoroutineDispatcher = Dispatchers.IO
+) : CryptoCache {
+    override suspend fun saveCryptos(cryptos: List<Crypto>) = withContext(dispatcher) {
         queries.deleteAll()
 
         cryptos.forEach { crypto ->
@@ -24,7 +29,7 @@ class CryptoCache(private val queries: CachedCryptoQueries){
         }
     }
 
-    suspend fun getCachedCryptos(): List<Crypto> = withContext(Dispatchers.IO){
+    override suspend fun getCachedCryptos(): List<Crypto> = withContext(dispatcher) {
         queries.selectAll().executeAsList().map { cached ->
             Crypto(
                 id = cached.id,

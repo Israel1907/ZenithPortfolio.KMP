@@ -3,9 +3,9 @@ package com.example.zenithportfolio.di
 import com.example.zenithportfolio.data.api.CoinGeckoApi
 import com.example.zenithportfolio.data.api.createHttpClient
 import com.example.zenithportfolio.data.db.DatabaseDriverFactory
-import com.example.zenithportfolio.data.repository.CryptoCache
+import com.example.zenithportfolio.data.repository.CryptoCacheImpl
 import com.example.zenithportfolio.data.repository.CryptoRepositoryImpl
-import com.example.zenithportfolio.data.repository.FavoriteRepository
+import com.example.zenithportfolio.data.repository.FavoriteRepositoryImpl
 import com.example.zenithportfolio.db.AppDatabase
 import com.example.zenithportfolio.presentation.crypto.CryptoViewModel
 import kotlinx.coroutines.CoroutineScope
@@ -18,9 +18,9 @@ object IosHelper {
         val api = CoinGeckoApi(httpClient)
         val driverFactory = DatabaseDriverFactory()
         val database = AppDatabase(driverFactory.createDriver())
-        val cache = CryptoCache(database.cachedCryptoQueries)
+        val cache = CryptoCacheImpl(database.cachedCryptoQueries)
         val repository = CryptoRepositoryImpl(api, cache)
-        val favoriteRepository = FavoriteRepository(database.favoriteQueries)
+        val favoriteRepository = FavoriteRepositoryImpl(database.favoriteQueries)
 
         return CryptoViewModel(repository, favoriteRepository)
     }
